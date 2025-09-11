@@ -2,15 +2,15 @@
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 
-type Session = { sub: string; role?: string } | null;
+export type Session = { sub: string; role?: string } | null;
 
-export async function getSession(): Promise<Session> {
-  const cookie = cookies().get("token")?.value;
-  if (!cookie) return null;
+export function getSession(): Session {
+  const token = cookies().get("token")?.value;
+  if (!token) return null;
 
   try {
-    const payload = jwt.verify(cookie, process.env.JWT_SECRET || "secret") as any;
-    return { sub: payload.sub, role: payload.role };
+    const payload = jwt.verify(token, process.env.JWT_SECRET!);
+    return payload as any; // { sub: userId, role?: 'ADMIN' | 'USER' | ... }
   } catch {
     return null;
   }

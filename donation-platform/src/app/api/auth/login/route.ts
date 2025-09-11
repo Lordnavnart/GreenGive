@@ -1,20 +1,39 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyPassword } from "@/lib/crypto";
-import { createSession } from "@/lib/session";
+import { compare } from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const email = String(body.email || "").toLowerCase().trim();
-  const password = String(body.password || "");
+  try {
+    const { email, password } = await req.json();
 
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) return NextResponse.json({ ok: false, error: "Sai email/mật khẩu" }, { status: 401 });
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || !user.passwordHash) {
+      return NextResponse.json({ ok: false, error: "Sai email hoặc mật khẩu" }, { status: 401 });
+    }
 
-  const ok = await verifyPassword(password, user.passwordHash);
-  if (!ok) return NextResponse.json({ ok: false, error: "Sai email/mật khẩu" }, { status: 401 });
+    const ok = await compare(password, user.passwordHash);
+    if (!ok) {
+      return NextResponse.json({ ok: false, error: "Sai email hoặc mật khẩu" }, { status: 401 });
+    }
 
-  await createSession({ sub: user.id, email: user.email, role: user.role });
+    const token = jwt.sign(
+      { sub: user.id, role: user.role },               // payload
+      process.env.JWT_SECRET!,                         // secret
+      { expiresIn: "7d" }                              // thời hạn
+    );
 
-  return NextResponse.json({ ok: true });
+    cookies().set("token", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60,
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e.message || "Server error" }, { status: 500 });
+  }
 }

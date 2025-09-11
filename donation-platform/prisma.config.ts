@@ -1,5 +1,5 @@
 ﻿import { defineConfig } from "prisma/config";
 
 export default defineConfig({
-  seed: "node --env-file=.env prisma/seed.mjs",
+  // Add supported PrismaConfig properties here if needed
 });

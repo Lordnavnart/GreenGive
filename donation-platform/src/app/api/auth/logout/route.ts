@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { destroySession } from "@/lib/session";
+import { cookies } from "next/headers";
 
 export async function POST() {
-  await destroySession();
+  cookies().set("token", "", { path: "/", maxAge: 0 });
   return NextResponse.json({ ok: true });
 }

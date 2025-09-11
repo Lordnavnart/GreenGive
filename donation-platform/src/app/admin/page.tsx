@@ -2,12 +2,26 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { createCampaign, deleteCampaign } from "./actions";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/session";
 
 function vnd(n: number) {
   return n.toLocaleString("vi-VN") + "đ";
 }
 
 export default async function AdminPage() {
+  // ====== BẢO VỆ TRANG ADMIN ======
+  // Nếu getSession() của bạn là async thì đổi thành: const session = await getSession()
+  const session = getSession();
+  if (!session) {
+    // chưa login -> chuyển sang đăng nhập, sau khi login quay lại /admin
+    redirect("/auth/login?next=/admin");
+  }
+  if (session.role !== "ADMIN") {
+    // đã login nhưng không phải admin -> về trang chủ
+    redirect("/");
+  }
+
   // ====== Dashboard aggregates ======
   const [donSum, donCount] = await Promise.all([
     prisma.donation.aggregate({
@@ -62,7 +76,6 @@ export default async function AdminPage() {
     take: 50,
   });
 
-  // tổng đã nhận cho từng dòng bảng
   const sumRows = await prisma.donation.groupBy({
     by: ["campaignId"],
     where: { status: "success", campaignId: { in: list.map((l) => l.id) } },
@@ -76,10 +89,7 @@ export default async function AdminPage() {
     <main className="container mx-auto px-6 py-8 space-y-8">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl sm:text-3xl font-semibold">Admin Dashboard</h1>
-        <Link
-          href="/"
-          className="text-sm px-3 py-1.5 rounded border hover:bg-gray-50"
-        >
+        <Link href="/" className="text-sm px-3 py-1.5 rounded border hover:bg-gray-50">
           ← Về trang chủ
         </Link>
       </header>
@@ -126,57 +136,24 @@ export default async function AdminPage() {
       {/* ==== Form tạo mới ==== */}
       <section className="bg-white border rounded-xl p-4 space-y-4">
         <h2 className="font-medium">Tạo chiến dịch mới</h2>
-        <form
-          action={createCampaign}
-          encType="multipart/form-data"
-          className="grid sm:grid-cols-2 gap-3"
-        >
-          <input
-            name="title"
-            placeholder="Tiêu đề *"
-            className="h-9 px-3 rounded border"
-            required
-          />
-          <input
-            name="goal"
-            type="number"
-            min={1000}
-            placeholder="Mục tiêu (đ) *"
-            className="h-9 px-3 rounded border"
-            required
-          />
-
-          {/* Ô upload ảnh từ máy */}
-          <input
-            type="file"
-            name="coverFile"
-            accept="image/*"
-            className="h-9 px-3 rounded border sm:col-span-2"
-          />
-
+        <form action={createCampaign} encType="multipart/form-data" className="grid sm:grid-cols-2 gap-3">
+          <input name="title" placeholder="Tiêu đề *" className="h-9 px-3 rounded border" required />
+          <input name="goal" type="number" min={1000} placeholder="Mục tiêu (đ) *" className="h-9 px-3 rounded border" required />
+          <input type="file" name="coverFile" accept="image/*" className="h-9 px-3 rounded border sm:col-span-2" />
           <select name="orgId" className="h-9 px-3 rounded border" required>
             <option value="">-- Chọn tổ chức --</option>
             {orgs.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.name}
-              </option>
+              <option key={o.id} value={o.id}>{o.name}</option>
             ))}
           </select>
-
           <select name="categoryId" className="h-9 px-3 rounded border" required>
             <option value="">-- Chọn danh mục --</option>
             {cats.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-
           <div className="sm:col-span-2">
-            <button
-              type="submit"
-              className="px-4 h-9 rounded bg-rose-600 text-white hover:bg-rose-700"
-            >
+            <button type="submit" className="px-4 h-9 rounded bg-rose-600 text-white hover:bg-rose-700">
               Tạo chiến dịch
             </button>
           </div>
@@ -204,10 +181,7 @@ export default async function AdminPage() {
               {list.map((c) => (
                 <tr key={c.id}>
                   <td className="py-2 pr-3">
-                    <Link
-                      href={`/campaigns/${c.id}`}
-                      className="text-rose-600 hover:underline"
-                    >
+                    <Link href={`/campaigns/${c.id}`} className="text-rose-600 hover:underline">
                       {c.title}
                     </Link>
                   </td>
@@ -218,18 +192,8 @@ export default async function AdminPage() {
                   <td className="py-2 pr-3">{c._count.donations}</td>
                   <td className="py-2 pr-3">{c.status}</td>
                   <td className="py-2">
-                    <form
-                      action={async () => {
-                        "use server";
-                        await deleteCampaign(c.id);
-                      }}
-                    >
-                      <button
-                        className="px-2 py-1 rounded border hover:bg-gray-50"
-                        type="submit"
-                      >
-                        Xoá
-                      </button>
+                    <form action={async () => { "use server"; await deleteCampaign(c.id); }}>
+                      <button className="px-2 py-1 rounded border hover:bg-gray-50" type="submit">Xoá</button>
                     </form>
                   </td>
                 </tr>
