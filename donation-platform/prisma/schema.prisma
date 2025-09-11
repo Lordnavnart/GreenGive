@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+  // Nếu bạn dùng MySQL local thì có thể bỏ dòng sau:
+  // shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+  ORG
+}
+
+enum OrgStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  COMPLETED
+}
+
+enum PaymentMethod {
+  STRIPE
+  VNPAY
+  MOMO
+  PAYPAL
+  MANUAL
+}
+
+enum DonationStatus {
+  pending
+  success
+  failed
+  refunded
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String?
+  passwordHash String?
+  role         Role       @default(USER)
+  createdAt    DateTime   @default(now())
+  donations    Donation[]
+
+  // (tuỳ chọn) nếu muốn quên mật khẩu:
+  // passwordResetToken   String?
+  // passwordResetExpiry  DateTime?
+
+  @@index([role])
+}
+
+model Organization {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  logoUrl     String?
+  website     String?
+  phone       String?
+  email       String?
+  address     String?
+  status      OrgStatus  @default(ACTIVE)
+  createdAt   DateTime   @default(now())
+  campaigns   Campaign[]
+
+  @@index([status])
+}
+
+model Category {
+  id        String     @id @default(cuid())
+  slug      String     @unique
+  name      String
+  campaigns Campaign[]
+}
+
+model Campaign {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  cover       String?
+  goal        Int
+  startAt     DateTime?
+  endAt       DateTime?
+  status      CampaignStatus @default(ACTIVE)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  orgId String
+
+  // ⇩⇩ SỬA 2 DÒNG NÀY ⇩⇩
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryId String? // cho phép null
+
+  donations Donation[]
+  images    CampaignImage[]
+  updates   ProgressUpdate[]
+
+  @@index([status])
+  @@index([orgId])
+  @@index([categoryId])
+}
+
+model Donation {
+  id          String         @id @default(cuid())
+  // Đơn vị: VND (đồng)
+  amount      Int
+  message     String?
+  anonymous   Boolean        @default(false)
+  method      PaymentMethod
+  status      DonationStatus @default(pending)
+  providerRef String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId String
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId String?
+
+  @@index([campaignId])
+  @@index([userId])
+  @@index([status])
+  @@index([method])
+}
+
+model CampaignImage {
+  id        String   @id @default(cuid())
+  url       String
+  caption   String?
+  createdAt DateTime @default(now())
+
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId String
+
+  @@index([campaignId])
+}
+
+model ProgressUpdate {
+  id        String   @id @default(cuid())
+  percent   Int // 0..100
+  content   String? // mô tả ngắn cập nhật
+  createdAt DateTime @default(now())
+
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId String
+
+  @@index([campaignId])
+}

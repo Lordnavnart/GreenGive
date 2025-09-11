@@ -1,0 +1,44 @@
+{
+  "name": "donation-platform",
+  "version": "0.1.0",
+  "private": true,
+
+  "prisma": {
+    "seed": "node --env-file=.env prisma/seed.mjs"
+  },
+
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start",
+
+    "db:sync": "prisma db push && prisma generate",
+    "db:seed": "prisma db seed",
+    "studio": "prisma studio"
+  },
+
+  "dependencies": {
+    "@prisma/client": "^6.15.0",
+    "dotenv": "^17.2.2",
+    "embla-carousel-autoplay": "^8.6.0",
+    "embla-carousel-react": "^8.6.0",
+    "lucide-react": "^0.542.0",
+    "next": "15.5.2",
+    "next-auth": "^4.24.11",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20.19.13",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.2",
+    "tailwindcss": "^4",
+    "typescript": "^5.9.2",
+    "prisma": "^6.15.0"
+  }
+}
