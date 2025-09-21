@@ -1,0 +1,81 @@
+/* Import Tailwind */
+@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Nền mặc định nếu Tailwind chưa load */
+html, body {
+  min-height: 100%;
+  background: #f9fafb;
+  color: #111827;
+}
+
+/* Biến màu nền/foreground */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ==================== CUSTOM STYLES ==================== */
+
+/* Lưới nền nhẹ (dùng cho Hero) */
+.bg-grid-light {
+  background-image:
+    linear-gradient(to right, rgba(15, 23, 42, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Nút có hiệu ứng shine */
+.shine-btn {
+  position: relative;
+  overflow: hidden;
+}
+.shine-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.35),
+    transparent
+  );
+  transform: translateX(-100%);
+}
+.shine-btn:hover::after {
+  transform: translateX(100%);
+  transition: transform 0.8s ease;
+}
+
+/* Card cơ bản */
+.card {
+  @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
+}
+
+/* Card hover nổi khối */
+.card-hover {
+  @apply transition hover:-translate-y-1 hover:shadow-lg;
+}
